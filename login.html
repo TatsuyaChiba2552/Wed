@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>ระบบแจ้งปัญหา</title>
+
+<style>
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:sans-serif;
+}
+
+body{
+  background:#0f172a;
+  color:white;
+  min-height:100vh;
+  padding:20px;
+}
+
+.main-layout{
+  display:flex;
+  gap:20px;
+  align-items:flex-start;
+}
+
+/* มือถือ */
+@media(max-width:768px){
+
+  .main-layout{
+    flex-direction:column;
+  }
+
+}
+
+.container{
+  flex:1;
+  background:#1e293b;
+  padding:25px;
+  border-radius:20px;
+  box-shadow:0 0 20px rgba(0,0,0,0.4);
+}
+
+.status-panel{
+  width:300px;
+  background:#1e293b;
+  padding:20px;
+  border-radius:20px;
+  box-shadow:0 0 20px rgba(0,0,0,0.4);
+}
+
+@media(max-width:768px){
+
+  .status-panel{
+    width:100%;
+  }
+
+}
+
+h1{
+  text-align:center;
+  margin-bottom:20px;
+  color:#38bdf8;
+}
+
+h2{
+  margin-bottom:15px;
+  color:#38bdf8;
+}
+
+button{
+  width:100%;
+  padding:12px;
+  margin-top:10px;
+  border:none;
+  border-radius:12px;
+  background:#0ea5e9;
+  color:white;
+  font-size:16px;
+  cursor:pointer;
+}
+
+button:hover{
+  opacity:0.9;
+}
+
+input, textarea{
+  width:100%;
+  padding:12px;
+  margin-top:10px;
+  border:none;
+  border-radius:10px;
+  background:#334155;
+  color:white;
+}
+
+textarea{
+  height:120px;
+  resize:none;
+}
+
+.hidden{
+  display:none;
+}
+
+.success{
+  color:#4ade80;
+  margin-top:15px;
+  text-align:center;
+}
+
+.error{
+  color:#f87171;
+  margin-top:15px;
+  text-align:center;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:20px;
+}
+
+th, td{
+  border:1px solid #475569;
+  padding:12px;
+  text-align:center;
+}
+
+th{
+  background:#0f172a;
+  color:#38bdf8;
+}
+
+td{
+  background:#334155;
+}
+
+.accept-btn{
+  background:#22c55e;
+}
+
+.delete-btn{
+  background:#ef4444;
+}
+
+.status-btn{
+  margin-top:5px;
+}
+
+.admin-card{
+  background:#334155;
+  padding:12px;
+  border-radius:12px;
+  margin-bottom:10px;
+}
+
+.status-text{
+  margin-top:5px;
+  font-weight:bold;
+}
+
+.green{
+  color:#4ade80;
+}
+
+.red{
+  color:#f87171;
+}
+
+.yellow{
+  color:#facc15;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="main-layout">
+
+  <!-- เนื้อหาหลัก -->
+  <div class="container">
+
+    <!-- หน้าแรก -->
+    <div id="homePage">
+
+      <h1>ระบบแจ้งปัญหา</h1>
+
+      <button onclick="openUserPage()">
+        ผู้ใช้ทั่วไป
+      </button>
+
+      <button onclick="openAdminLogin()">
+        แอดมิน
+      </button>
+
+    </div>
+
+
+    <!-- หน้าแจ้งปัญหา -->
+    <div id="userPage" class="hidden">
+
+      <h1>แจ้งปัญหา</h1>
+
+      <input 
+        type="text"
+        id="name"
+        placeholder="ชื่อผู้แจ้ง"
+      >
+
+      <input 
+        type="text"
+        id="room"
+        placeholder="เลขห้อง เช่น 121"
+      >
+
+      <textarea 
+        id="problem"
+        placeholder="รายละเอียดปัญหา"
+      ></textarea>
+
+      <button onclick="sendReport()">
+        ส่งแจ้งปัญหา
+      </button>
+
+      <button onclick="goHome()">
+        กลับหน้าแรก
+      </button>
+
+      <div id="successMsg" class="success"></div>
+
+    </div>
+
+
+    <!-- Login Admin -->
+    <div id="adminLoginPage" class="hidden">
+
+      <h1>เข้าสู่ระบบแอดมิน</h1>
+
+      <input 
+        type="password"
+        id="adminPassword"
+        placeholder="กรอกรหัสแอดมิน"
+      >
+
+      <button onclick="loginAdmin()">
+        เข้าสู่ระบบ
+      </button>
+
+      <button onclick="goHome()">
+        กลับหน้าแรก
+      </button>
+
+      <div id="loginError" class="error"></div>
+
+    </div>
+
+
+    <!-- หน้า Admin -->
+    <div id="adminPage" class="hidden">
+
+      <h1 id="adminTitle">
+        รายการแจ้งปัญหา
+      </h1>
+
+      <!-- ปุ่มสถานะ -->
+      <button 
+        class="accept-btn"
+        onclick="changeMyStatus('ว่าง')"
+      >
+        ว่าง
+      </button>
+
+      <button 
+        class="delete-btn"
+        onclick="changeMyStatus('ไม่ว่าง')"
+      >
+        ไม่ว่าง
+      </button>
+
+      <button 
+        style="background:#eab308;"
+        onclick="changeMyStatus('สอนอยู่')"
+      >
+        สอนอยู่
+      </button>
+
+
+      <table>
+
+        <thead>
+
+          <tr>
+
+            <th>ผู้แจ้ง</th>
+            <th>ห้อง</th>
+            <th>ปัญหา</th>
+            <th>สถานะ</th>
+            <th>จัดการ</th>
+
+          </tr>
+
+        </thead>
+
+        <tbody id="reportTable">
+
+        </tbody>
+
+      </table>
+
+      <button onclick="goHome()">
+        ออกจากระบบ
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <!-- ด้านขวา -->
+  <div class="status-panel">
+
+    <h2>สถานะแอดมิน</h2>
+
+    <div id="adminStatusList"></div>
+
+  </div>
+
+</div>
+
+
+<script>
+
+// Discord Webhook
+const webhookURL = "https://discord.com/api/webhooks/1506876755577929810/NaRG_f8-mln2ZvsSGgAJCl4azBmzTdD9ufBGzULS1hLAQ202DqEJdra4KBeGNJ7aRxYd";
+
+
+// แอดมิน
+const admins = {
+
+  "2580":{
+    name:"Admin1",
+    status:"ว่าง"
+  },
+
+  "089":{
+    name:"Admin2",
+    status:"ว่าง"
+  },
+
+  "777":{
+    name:"Admin3",
+    status:"ว่าง"
+  },
+
+  "0000":{
+    name:"Admin4",
+    status:"ว่าง"
+  }
+
+};
+
+
+// เก็บงาน
+let reports = [];
+
+// แอดมินที่ login
+let currentAdminPassword = null;
+
+
+// โหลดสถานะแอดมิน
+function loadAdminStatuses(){
+
+  const list =
+    document.getElementById("adminStatusList");
+
+  list.innerHTML = "";
+
+  for(let password in admins){
+
+    const admin = admins[password];
+
+    let colorClass = "green";
+
+    if(admin.status === "ไม่ว่าง"){
+      colorClass = "red";
+    }
+
+    if(admin.status === "สอนอยู่"){
+      colorClass = "yellow";
+    }
+
+    list.innerHTML += `
+
+      <div class="admin-card">
+
+        <div>${admin.name}</div>
+
+        <div class="status-text ${colorClass}">
+          ${admin.status}
+        </div>
+
+      </div>
+
+    `;
+
+  }
+
+}
+
+
+// ซ่อนทุกหน้า
+function hideAllPages(){
+
+  document.getElementById("homePage")
+    .classList.add("hidden");
+
+  document.getElementById("userPage")
+    .classList.add("hidden");
+
+  document.getElementById("adminLoginPage")
+    .classList.add("hidden");
+
+  document.getElementById("adminPage")
+    .classList.add("hidden");
+
+}
+
+
+// กลับหน้าแรก
+function goHome(){
+
+  hideAllPages();
+
+  document.getElementById("homePage")
+    .classList.remove("hidden");
+
+}
+
+
+// เปิดหน้าแจ้งปัญหา
+function openUserPage(){
+
+  hideAllPages();
+
+  document.getElementById("userPage")
+    .classList.remove("hidden");
+
+}
+
+
+// เปิด Login
+function openAdminLogin(){
+
+  hideAllPages();
+
+  document.getElementById("adminLoginPage")
+    .classList.remove("hidden");
+
+}
+
+
+// Login
+function loginAdmin(){
+
+  const password =
+    document.getElementById("adminPassword").value;
+
+  if(admins[password]){
+
+    currentAdminPassword = password;
+
+    hideAllPages();
+
+    document.getElementById("adminPage")
+      .classList.remove("hidden");
+
+    document.getElementById("adminTitle")
+      .innerText =
+      "รายการแจ้งปัญหา - " +
+      admins[password].name;
+
+    loadReports();
+
+  }else{
+
+    document.getElementById("loginError")
+      .innerText = "รหัสผ่านไม่ถูกต้อง";
+
+  }
+
+}
+
+
+// เปลี่ยนสถานะตัวเอง
+function changeMyStatus(status){
+
+  admins[currentAdminPassword].status =
+    status;
+
+  loadAdminStatuses();
+
+}
+
+
+// โหลดงาน
+function loadReports(){
+
+  const table =
+    document.getElementById("reportTable");
+
+  table.innerHTML = "";
+
+  reports.forEach((report,index) => {
+
+    table.innerHTML += `
+
+      <tr>
+
+        <td>${report.name}</td>
+
+        <td>${report.room}</td>
+
+        <td>${report.problem}</td>
+
+        <td>${report.status}</td>
+
+        <td>
+
+          <button 
+            class="accept-btn"
+            onclick="acceptJob(${index})"
+          >
+            รับงาน
+          </button>
+
+          <button 
+            class="delete-btn"
+            onclick="deleteJob(${index})"
+          >
+            งานเสร็จ
+          </button>
+
+        </td>
+
+      </tr>
+
+    `;
+
+  });
+
+}
+
+
+// รับงาน
+function acceptJob(index){
+
+  reports[index].status =
+    "กำลังดำเนินการ";
+
+  loadReports();
+
+}
+
+
+// ลบงาน
+function deleteJob(index){
+
+  reports.splice(index,1);
+
+  loadReports();
+
+}
+
+
+// ส่งแจ้งปัญหา
+async function sendReport(){
+
+  const name =
+    document.getElementById("name").value;
+
+  const room =
+    document.getElementById("room").value;
+
+  const problem =
+    document.getElementById("problem").value;
+
+
+  if(!name || !room || !problem){
+
+    alert("กรอกข้อมูลให้ครบ");
+
+    return;
+
+  }
+
+
+  reports.push({
+
+    name:name,
+    room:room,
+    problem:problem,
+    status:"รอดำเนินการ"
+
+  });
+
+
+  loadReports();
+
+
+  const data = {
+
+    embeds:[
+
+      {
+
+        title:"📢 แจ้งปัญหาใหม่",
+
+        color:3447003,
+
+        fields:[
+
+          {
+            name:"👤 ผู้แจ้ง",
+            value:name,
+            inline:true
+          },
+
+          {
+            name:"🏫 ห้อง",
+            value:room,
+            inline:true
+          },
+
+          {
+            name:"⚠️ ปัญหา",
+            value:problem
+          }
+
+        ],
+
+        timestamp:new Date()
+
+      }
+
+    ]
+
+  };
+
+
+  try{
+
+    await fetch(webhookURL, {
+
+      method:"POST",
+
+      headers:{
+        "Content-Type":"application/json"
+      },
+
+      body:JSON.stringify(data)
+
+    });
+
+  }catch(error){
+
+    console.log(error);
+
+  }
+
+
+  document.getElementById("successMsg")
+    .innerText = "ส่งข้อมูลเรียบร้อยแล้ว";
+
+
+  document.getElementById("name").value = "";
+  document.getElementById("room").value = "";
+  document.getElementById("problem").value = "";
+
+}
+
+
+// โหลดสถานะเริ่มต้น
+loadAdminStatuses();
+
+</script>
+
+</body>
+</html>
